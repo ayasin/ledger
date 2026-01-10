@@ -7,6 +7,7 @@ export default defineConfig({
 		fs: {
 			strict: false
 		},
+		port: 1815,
 		strictPort: true,
 		allowedHosts: ['yasin.ngrok.io']
 	},

@@ -71,7 +71,8 @@ async function readPassword(prompt: string): Promise<string> {
 					// Regular character - add to password and show asterisk
 					if (char.charCodeAt(0) >= 32) { // Printable characters only
 						password += char;
-						process.stdout.write('*');
+						// Move back to overwrite the echoed character with an asterisk
+						process.stdout.write('\b*');
 					}
 					break;
 			}
@@ -129,24 +130,28 @@ async function addUser() {
 
 	// Hash password and create user
 	const passwordHash = await hashPassword(password);
+	try {
+		const result = await db
+			.insert(users)
+			.values({
+				email,
+				name,
+				password_hash: passwordHash,
+				is_active: isActive
+			})
+			.returning();
 
-	const result = await db
-		.insert(users)
-		.values({
-			email,
-			name,
-			password_hash: passwordHash,
-			is_active: isActive
-		})
-		.returning();
+		const user = result[0];
 
-	const user = result[0];
-
-	console.log(`\n✓ User created successfully!`);
-	console.log(`  ID: ${user.id}`);
-	console.log(`  Email: ${user.email}`);
-	console.log(`  Name: ${user.name}`);
-	console.log(`  Active: ${user.is_active ? 'Yes' : 'No'}`);
+		console.log(`\n✓ User created successfully!`);
+		console.log(`  ID: ${user.id}`);
+		console.log(`  Email: ${user.email}`);
+		console.log(`  Name: ${user.name}`);
+		console.log(`  Active: ${user.is_active ? 'Yes' : 'No'}`);
+	} catch (error) {
+		console.error('Error creating user:', (error as Error).message);
+		process.exit(1);
+	}
 }
 
 async function changePassword() {

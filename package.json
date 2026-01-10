@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "NODE_ENV=development vite dev --port 4000",
+		"dev": "NODE_ENV=development vite dev --host",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -14,7 +14,6 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
-		"db:seed": "tsx scripts/seed.ts",
 		"user-cli": "tsx scripts/user-cli.ts"
 	},
 	"devDependencies": {
