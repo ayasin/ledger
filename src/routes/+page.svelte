@@ -337,7 +337,7 @@
 		newTransaction.lines.push({
 			category: null,
 			description: '',
-			amount: 0
+			amount: (newTransaction.receiptTotal ? newTransaction.receiptTotal : newTransaction.total) - newTransaction.lines.reduce((acc, next) => acc + next.amount, 0)
 		});
 	}
 
@@ -361,7 +361,7 @@
 		}
 	}
 
-	async function handleAddTransaction() {
+	async function handleAddTransaction(closeModal = true) {
 		try {
 			// Validate required fields before submitting
 			if (!newTransaction.account?.id) {
@@ -419,7 +419,9 @@
 					});
 				}
 
-				addTransactionModalOpen = false;
+				if (closeModal) {
+					addTransactionModalOpen = false;
+				}
 				await fetchTransactions();
 				// Reset form
 				newTransaction = {
@@ -440,6 +442,7 @@
 					],
 					tags: []
 				};
+				uploadingFiles = [];
 			} else {
 				const error = await response.json();
 				alert(error.error?.message || 'Failed to create transaction');
@@ -993,13 +996,15 @@
 				<TextInput
 					label="Receipt Total"
 					type="number"
-					placeholder="0.00"
+					step="any"
+					placeholder="0.00 (negative for refunds)"
 					bind:value={newTransaction.receiptTotal}
 				/>
 				<TextInput
 					label="Charged ({newTransaction.account ? getAccountCurrency(newTransaction.account.id) : 'acct'})"
 					type="number"
-					placeholder="0.00"
+					step="any"
+					placeholder="0.00 (negative for refunds)"
 					bind:value={newTransaction.total}
 					required
 				/>
@@ -1103,7 +1108,8 @@
 							<TextInput
 								label="Amount ({newTransaction.receiptCurrency || (newTransaction.account ? getAccountCurrency(newTransaction.account.id) : 'Receipt Currency')})"
 								type="number"
-								placeholder="0.00"
+								step="any"
+								placeholder="0.00 (negative for discounts)"
 								bind:value={line.amount}
 								required
 							/>
@@ -1160,7 +1166,10 @@
 		}}>
 			Cancel
 		</Button>
-		<Button onclick={handleAddTransaction}>
+		<Button variant="outline" onclick={() => handleAddTransaction(false)}>
+			Create and Add Another
+		</Button>
+		<Button onclick={() => handleAddTransaction(true)}>
 			Create Transaction
 		</Button>
 	{/snippet}
@@ -1323,13 +1332,15 @@
 				<TextInput
 					label="Receipt Total"
 					type="number"
-					placeholder="0.00"
+					step="any"
+					placeholder="0.00 (negative for refunds)"
 					bind:value={editTransaction.receiptTotal}
 				/>
 				<TextInput
 					label="Charged ({editTransaction.account ? getAccountCurrency(editTransaction.account.id) : 'Account Currency'})"
 					type="number"
-					placeholder="0.00"
+					step="any"
+					placeholder="0.00 (negative for refunds)"
 					bind:value={editTransaction.total}
 					required
 				/>
@@ -1433,7 +1444,8 @@
 							<TextInput
 								label="Amount ({editTransaction.receiptCurrency || (editTransaction.account ? getAccountCurrency(editTransaction.account.id) : 'Receipt Currency')})"
 								type="number"
-								placeholder="0.00"
+								step="any"
+								placeholder="0.00 (negative for discounts)"
 								bind:value={line.amount}
 								required
 							/>

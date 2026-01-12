@@ -7,6 +7,8 @@
 		required?: boolean;
 		disabled?: boolean;
 		error?: string;
+		step?: string | number;
+		min?: string | number;
 	}
 
 	let {
@@ -16,7 +18,9 @@
 		value = $bindable(''),
 		required = false,
 		disabled = false,
-		error
+		error,
+		step,
+		min
 	}: Props = $props();
 </script>
 
@@ -33,6 +37,8 @@
 		{placeholder}
 		{required}
 		{disabled}
+		step={step}
+		min={min}
 		bind:value
 		class="px-3.5 py-2.5 border border-gray-300 rounded-md text-sm transition-all bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-gray-50 disabled:cursor-not-allowed {error ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : ''}"
 	/>
