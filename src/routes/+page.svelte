@@ -324,12 +324,30 @@
 		return Math.round((originalAmountCents / amountCents) * 1000);
 	}
 
+	// UTC date helper functions
+	function dateToUTCString(date: Date | string): string {
+		// Convert a Date object or ISO string to YYYY-MM-DD format in UTC
+		const d = typeof date === 'string' ? new Date(date) : date;
+		const year = d.getUTCFullYear();
+		const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+		const day = String(d.getUTCDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+
+	function utcStringToDate(dateString: string): Date {
+		// Parse YYYY-MM-DD string as UTC midnight
+		const [year, month, day] = dateString.split('-').map(Number);
+		return new Date(Date.UTC(year, month - 1, day));
+	}
+
 	function formatDate(date: Date | string): string {
+		// Always format dates in UTC timezone
 		const d = typeof date === 'string' ? new Date(date) : date;
 		return new Intl.DateTimeFormat('en-US', {
 			year: 'numeric',
 			month: 'short',
-			day: 'numeric'
+			day: 'numeric',
+			timeZone: 'UTC'
 		}).format(d);
 	}
 
@@ -380,7 +398,7 @@
 				method: 'POST',
 				headers: getAuthHeaders(),
 				body: JSON.stringify({
-					transaction_date: new Date(newTransaction.transaction_date),
+					transaction_date: utcStringToDate(newTransaction.transaction_date),
 					account_id: newTransaction.account.id,
 					counterparty: newTransaction.counterparty || null,
 					total_cents: Math.round(newTransaction.total * 100),
@@ -535,7 +553,7 @@
 
 			editTransaction = {
 				id: transaction.id,
-				transaction_date: new Date(transaction.transaction_date).toISOString().split('T')[0],
+				transaction_date: dateToUTCString(transaction.transaction_date),
 				account: accounts.find(a => a.id === transaction.account_id) || null,
 				counterparty: transaction.counterparty || '',
 				total: transaction.total_cents / 100,
@@ -580,7 +598,7 @@
 			) : null;
 
 			const payload: any = {
-				transaction_date: new Date(editTransaction.transaction_date),
+				transaction_date: utcStringToDate(editTransaction.transaction_date),
 				account_id: editTransaction.account.id,
 				total_cents: Math.round(editTransaction.total * 100),
 				// Multi-currency support - transaction level
