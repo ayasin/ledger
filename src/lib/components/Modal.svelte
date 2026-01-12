@@ -31,13 +31,24 @@
 			close();
 		}
 	}
+
+	function handleBackdropKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			close();
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn" onclick={handleBackdropClick}>
-		<div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-slideUp">
+	<div
+		class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
+		onclick={handleBackdropClick}
+		onkeydown={handleBackdropKeydown}
+		role="presentation"
+	>
+		<div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-slideUp" role="dialog" aria-modal="true">
 			<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
 				{#if title}
 					<h2 class="text-xl font-semibold text-gray-900">{title}</h2>

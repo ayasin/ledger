@@ -38,6 +38,9 @@
 	let dropdownElement: HTMLDivElement;
 	let isCreating = $state(false);
 
+	// Generate unique ID for accessibility
+	const inputId = `typeahead-${Math.random().toString(36).substr(2, 9)}`;
+
 	// Filter options based on search query
 	let filteredOptions = $derived.by(() => {
 		if (!searchQuery.trim()) {
@@ -220,7 +223,7 @@
 
 <div class="flex flex-col gap-2 w-full relative">
 	{#if label}
-		<label class="text-sm font-medium text-gray-700">
+		<label for={inputId} class="text-sm font-medium text-gray-700">
 			{label}
 			{#if required}<span class="text-red-500">*</span>{/if}
 		</label>
@@ -237,6 +240,7 @@
 						onclick={() => removeOption(item)}
 						class="ml-1 hover:text-blue-900"
 						tabindex="-1"
+						aria-label="Remove {String(item[displayField])}"
 					>
 						<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -250,6 +254,7 @@
 	<div class="relative">
 		<input
 			bind:this={inputElement}
+			id={inputId}
 			type="text"
 			{placeholder}
 			{required}
@@ -271,6 +276,7 @@
 				onclick={clearSelection}
 				class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
 				tabindex="-1"
+				aria-label="Clear selection"
 			>
 				<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />

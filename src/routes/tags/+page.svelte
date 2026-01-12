@@ -221,7 +221,7 @@
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-2 flex-1 min-w-0">
 									{#if tag.color}
-										<div class="w-6 h-6 rounded-full border border-gray-300 flex-shrink-0" style="background-color: {tag.color}"></div>
+										<div class="w-6 h-6 rounded-full border border-gray-300 shrink-0" style="background-color: {tag.color}"></div>
 									{/if}
 									<span class="text-sm font-semibold text-gray-900 truncate">{tag.name}</span>
 								</div>
@@ -300,9 +300,9 @@
 		/>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<div class="block text-sm font-medium text-gray-700 mb-2">
 				Color
-			</label>
+			</div>
 			<div class="flex gap-2 flex-wrap">
 				{#each colors as color}
 					<button
@@ -310,6 +310,7 @@
 						onclick={() => newTag.color = color}
 						class="w-10 h-10 rounded-full border-2 transition-all {newTag.color === color ? 'border-gray-900 scale-110' : 'border-gray-300 hover:scale-105'}"
 						style="background-color: {color}"
+						aria-label="Select color {color}"
 					></button>
 				{/each}
 			</div>
@@ -337,9 +338,9 @@
 		/>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<div class="block text-sm font-medium text-gray-700 mb-2">
 				Color
-			</label>
+			</div>
 			<div class="flex gap-2 flex-wrap">
 				{#each colors as color}
 					<button
@@ -347,6 +348,7 @@
 						onclick={() => editTag.color = color}
 						class="w-10 h-10 rounded-full border-2 transition-all {editTag.color === color ? 'border-gray-900 scale-110' : 'border-gray-300 hover:scale-105'}"
 						style="background-color: {color}"
+						aria-label="Select color {color}"
 					></button>
 				{/each}
 			</div>
@@ -380,11 +382,11 @@
 		<div class="space-y-4">
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Tag Name</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Tag Name</div>
 					<p class="text-sm text-gray-900">{selectedTag.name}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Color</div>
 					<div class="flex items-center gap-2">
 						<div class="w-6 h-6 rounded-full border border-gray-300" style="background-color: {selectedTag.color || '#3B82F6'}"></div>
 						<span class="text-sm text-gray-900">{selectedTag.color || '-'}</span>

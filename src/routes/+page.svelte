@@ -861,7 +861,7 @@
 						placeholder='category:groceries and tag:personal'
 						bind:value={filterQuery}
 					/>
-					<p class="mt-1 text-xs text-gray-500 break-words">
+					<p class="mt-1 text-xs text-gray-500 wrap-break-word">
 						Supports: <code class="bg-gray-100 px-1 py-0.5 rounded">and</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">or</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">()</code> grouping, <code class="bg-gray-100 px-1 py-0.5 rounded">category:-</code> (empty)
 					</p>
 				</div>
@@ -901,7 +901,7 @@
 							<!-- First line: Date, Account, Counterparty, Total -->
 							<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
 								<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 flex-1 min-w-0">
-									<div class="text-sm font-medium text-gray-900 sm:min-w-[100px]">
+									<div class="text-sm font-medium text-gray-900 sm:min-w-25">
 										{formatDate(transaction.transaction_date)}
 									</div>
 									<div class="text-sm text-gray-600 truncate">
@@ -1008,7 +1008,7 @@
 				<TextInput
 					label="Receipt Currency"
 					type="text"
-					placeholder="{newTransaction.account ? getAccountCurrency(newTransaction.account.id) : 'USD, EUR, MXN...'}"
+					placeholder={newTransaction.account ? getAccountCurrency(newTransaction.account.id) : 'USD, EUR, MXN...'}
 					bind:value={newTransaction.receiptCurrency}
 				/>
 				<TextInput
@@ -1166,6 +1166,7 @@
 								<button
 									onclick={() => removeUploadingFile(index)}
 									class="text-red-600 hover:text-red-800"
+									aria-label="Remove file"
 								>
 									<i class="fas fa-times"></i>
 								</button>
@@ -1198,24 +1199,24 @@
 		<div class="space-y-4">
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Date</div>
 					<p class="text-sm text-gray-900">{formatDate(selectedTransaction.transaction_date)}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Reference</div>
 					<p class="text-sm text-gray-900">{selectedTransaction.reference || '-'}</p>
 				</div>
 			</div>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Account</div>
 					<p class="text-sm text-gray-900">
 						{accounts.find(a => a.id === selectedTransaction?.account_id)?.displayName || `Account #${selectedTransaction?.account_id}`}
 					</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Total</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Total</div>
 					<p class="text-sm text-gray-900">{formatCurrency(selectedTransaction.total_cents)}</p>
 					{#if selectedTransaction.receipt_currency && selectedTransaction.receipt_total_cents && selectedTransaction.exchange_rate_thousandths}
 						<p class="text-xs text-gray-600 mt-1">
@@ -1226,12 +1227,12 @@
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-1">Counterparty</label>
+				<div class="block text-sm font-medium text-gray-700 mb-1">Counterparty</div>
 				<p class="text-sm text-gray-900">{selectedTransaction.counterparty || '-'}</p>
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-1">Memo</label>
+				<div class="block text-sm font-medium text-gray-700 mb-1">Memo</div>
 				<p class="text-sm text-gray-900">{selectedTransaction.memo || '-'}</p>
 			</div>
 
@@ -1344,7 +1345,7 @@
 				<TextInput
 					label="Receipt Currency"
 					type="text"
-					placeholder="{editTransaction.account ? getAccountCurrency(editTransaction.account.id) : 'USD, EUR, MXN...'}"
+					placeholder={editTransaction.account ? getAccountCurrency(editTransaction.account.id) : 'USD, EUR, MXN...'}
 					bind:value={editTransaction.receiptCurrency}
 				/>
 				<TextInput
@@ -1531,6 +1532,7 @@
 								<button
 									onclick={() => removeUploadingFile(index)}
 									class="text-red-600 hover:text-red-800"
+									aria-label="Remove file"
 								>
 									<i class="fas fa-times"></i>
 								</button>

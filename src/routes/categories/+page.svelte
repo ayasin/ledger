@@ -264,7 +264,7 @@
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2 mb-1">
 										{#if category.color}
-											<div class="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style="background-color: {category.color}"></div>
+											<div class="w-4 h-4 rounded-full border border-gray-300 shrink-0" style="background-color: {category.color}"></div>
 										{/if}
 										<span class="text-sm font-semibold text-gray-900 truncate">{category.name}</span>
 									</div>
@@ -366,10 +366,11 @@
 		/>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label for="new-category-type" class="block text-sm font-medium text-gray-700 mb-2">
 				Type
 			</label>
 			<select
+				id="new-category-type"
 				bind:value={newCategory.type}
 				class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
 			>
@@ -381,9 +382,9 @@
 		</div>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<div class="block text-sm font-medium text-gray-700 mb-2">
 				Color
-			</label>
+			</div>
 			<div class="flex gap-2 flex-wrap">
 				{#each colors as color}
 					<button
@@ -391,6 +392,7 @@
 						onclick={() => newCategory.color = color}
 						class="w-10 h-10 rounded-full border-2 transition-all {newCategory.color === color ? 'border-gray-900 scale-110' : 'border-gray-300 hover:scale-105'}"
 						style="background-color: {color}"
+						aria-label="Select color {color}"
 					></button>
 				{/each}
 			</div>
@@ -425,10 +427,11 @@
 		/>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<label for="edit-category-type" class="block text-sm font-medium text-gray-700 mb-2">
 				Type
 			</label>
 			<select
+				id="edit-category-type"
 				bind:value={editCategory.type}
 				class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
 			>
@@ -440,9 +443,9 @@
 		</div>
 
 		<div>
-			<label class="block text-sm font-medium text-gray-700 mb-2">
+			<div class="block text-sm font-medium text-gray-700 mb-2">
 				Color
-			</label>
+			</div>
 			<div class="flex gap-2 flex-wrap">
 				{#each colors as color}
 					<button
@@ -450,6 +453,7 @@
 						onclick={() => editCategory.color = color}
 						class="w-10 h-10 rounded-full border-2 transition-all {editCategory.color === color ? 'border-gray-900 scale-110' : 'border-gray-300 hover:scale-105'}"
 						style="background-color: {color}"
+						aria-label="Select color {color}"
 					></button>
 				{/each}
 			</div>
@@ -483,11 +487,11 @@
 		<div class="space-y-4">
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Category Name</div>
 					<p class="text-sm text-gray-900">{selectedCategory.name}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Color</div>
 					<div class="flex items-center gap-2">
 						<div class="w-6 h-6 rounded-full border border-gray-300" style="background-color: {selectedCategory.color || '#3B82F6'}"></div>
 						<span class="text-sm text-gray-900">{selectedCategory.color || '-'}</span>
@@ -496,31 +500,31 @@
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+				<div class="block text-sm font-medium text-gray-700 mb-1">Description</div>
 				<p class="text-sm text-gray-900">{selectedCategory.description || '-'}</p>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Type</div>
 					<p class="text-sm text-gray-900">{selectedCategory.type || '-'}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Status</div>
 					<p class="text-sm text-gray-900">{selectedCategory.status}</p>
 				</div>
 			</div>
 
 			{#if selectedCategory.budget_amount_cents}
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Budget</div>
 					<p class="text-sm text-gray-900">${(selectedCategory.budget_amount_cents / 100).toFixed(2)}</p>
 				</div>
 			{/if}
 
 			{#if selectedCategory.parent_id}
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Parent Category ID</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Parent Category ID</div>
 					<p class="text-sm text-gray-900">{selectedCategory.parent_id}</p>
 				</div>
 			{/if}

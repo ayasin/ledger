@@ -438,10 +438,11 @@
 				required
 			/>
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="new-account-type" class="block text-sm font-medium text-gray-700 mb-2">
 					Account Type <span class="text-red-500">*</span>
 				</label>
 				<select
+					id="new-account-type"
 					bind:value={newAccount.type}
 					class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
 					required
@@ -498,10 +499,11 @@
 				required
 			/>
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="edit-account-type" class="block text-sm font-medium text-gray-700 mb-2">
 					Account Type <span class="text-red-500">*</span>
 				</label>
 				<select
+					id="edit-account-type"
 					bind:value={editAccount.type}
 					class="w-full px-3.5 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
 					required
@@ -564,11 +566,11 @@
 		<div class="space-y-4">
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Account Code</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Account Code</div>
 					<p class="text-sm text-gray-900">{selectedAccount.code}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Account Type</div>
 					<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {getTypeColor(selectedAccount.type)}">
 						{selectedAccount.type}
 					</span>
@@ -576,22 +578,22 @@
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+				<div class="block text-sm font-medium text-gray-700 mb-1">Account Name</div>
 				<p class="text-sm text-gray-900">{selectedAccount.name}</p>
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+				<div class="block text-sm font-medium text-gray-700 mb-1">Description</div>
 				<p class="text-sm text-gray-900">{selectedAccount.description || '-'}</p>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Currency</div>
 					<p class="text-sm text-gray-900">{selectedAccount.currency}</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+					<div class="block text-sm font-medium text-gray-700 mb-1">Status</div>
 					<p class="text-sm text-gray-900">{selectedAccount.status}</p>
 				</div>
 			</div>
