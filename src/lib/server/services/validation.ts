@@ -32,7 +32,7 @@ export const updateCategorySchema = createCategorySchema.partial();
 export const transactionLineSchema = z.object({
 	category_id: z.number().int().positive().nullable().optional(),
 	description: z.string().max(1000).nullable().optional(),
-	amount_cents: z.number().int().nonnegative(),
+	amount_cents: z.number().int(),
 	// Multi-currency fields - all in smallest currency unit
 	original_amount_cents: z.number().int().nullable().optional(),
 	original_currency: z.string().length(3).nullable().optional(),
