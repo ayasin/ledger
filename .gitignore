@@ -23,6 +23,9 @@ accounting.db
 accounting.db-shm
 accounting.db-wal
 data/uploads/
+data/backups/*.db
+data/backups/*.db.*
+data/backups/.last-backup-hash
 
 # Vite
 vite.config.js.timestamp-*
