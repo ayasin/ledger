@@ -59,6 +59,12 @@
 	let exporting = $state(false);
 	let filterQuery = $state('');
 
+	// Pagination state
+	let currentPage = $state(1);
+	let itemsPerPage = $state(50);
+	let totalItems = $state(0);
+	let totalPages = $state(0);
+
 	onMount(async () => {
 		try {
 			await fetchTransactions();
@@ -70,7 +76,7 @@
 		}
 	});
 
-	// Debounced filter effect
+	// Debounced filter effect (resets to page 1)
 	let filterTimeout: ReturnType<typeof setTimeout> | null = null;
 	$effect(() => {
 		if (!loading) {
@@ -81,6 +87,7 @@
 			}
 
 			filterTimeout = setTimeout(() => {
+				currentPage = 1; // Reset to first page on filter change
 				fetchTransactions();
 			}, 500);
 		}
@@ -90,6 +97,20 @@
 				clearTimeout(filterTimeout);
 			}
 		};
+	});
+
+	// Pagination effect (refetch when page or items per page changes)
+	$effect(() => {
+		if (!loading) {
+			// Track pagination changes
+			const page = currentPage;
+			const limit = itemsPerPage;
+
+			// Skip if this is triggered by the filter effect
+			if (filterTimeout) return;
+
+			fetchTransactions();
+		}
 	});
 
 	function getAuthHeaders(): HeadersInit {
@@ -104,7 +125,7 @@
 		try {
 			const parsed = parseQuery(filterQuery);
 			const queryString = buildQueryString(parsed);
-			const url = `/api/transactions?limit=1000&sort=transaction_date&order=desc&line_level_filter=true${queryString ? '&' + queryString : ''}`;
+			const url = `/api/transactions?page=${currentPage}&limit=${itemsPerPage}&sort=transaction_date&order=desc&line_level_filter=true${queryString ? '&' + queryString : ''}`;
 
 			const response = await fetch(url, {
 				headers: getAuthHeaders()
@@ -118,6 +139,10 @@
 			const data = await response.json();
 			if (data.data) {
 				transactions = data.data;
+			}
+			if (data.meta) {
+				totalItems = data.meta.total;
+				totalPages = data.meta.pages;
 			}
 		} catch (error) {
 			console.error('Failed to fetch transactions:', error);
@@ -137,7 +162,7 @@
 
 			const data = await response.json();
 			if (data.data) {
-				categories = data.data.reduce((acc, next) => { acc[next.id] = next; return acc;}, {} as { [key: number] : Category});
+				categories = data.data.reduce((acc: { [key: number]: Category }, next: Category) => { acc[next.id] = next; return acc;}, {} as { [key: number] : Category});
 			}
 		} catch (error) {
 			console.error('Failed to fetch categories:', error);
@@ -202,7 +227,7 @@
 				if (transaction.lines && transaction.lines.length > 0) {
 					// One row per transaction line with proportional amounts in account currency
 					transaction.lines.forEach(line => {
-						const lineTotal = (transaction.receipt_currency === transaction.account?.currency || !transaction.receipt_currency) ? formatCurrency(line.amount_cents) : formatCurrency(transaction.total_cents * (line.amount_cents/transaction.receipt_total_cents));
+						const lineTotal = (transaction.receipt_currency === transaction.account?.currency || !transaction.receipt_currency || !transaction.receipt_total_cents) ? formatCurrency(line.amount_cents) : formatCurrency(transaction.total_cents * (line.amount_cents/transaction.receipt_total_cents));
 
 						csvRows.push([
 							date,
@@ -264,7 +289,7 @@
 		return categories[id]?.name || 'unknown';
 	}
 
-	function escapeCSV(value: string): string {
+	function escapeCSV(value: string | number): string {
 		if (value === null || value === undefined) return '';
 		const stringValue = String(value);
 		// Escape quotes and wrap in quotes if contains comma, quote, or newline
@@ -491,6 +516,66 @@
 								{/each}
 							</tbody>
 						</table>
+					</div>
+
+					<!-- Pagination Controls -->
+					<div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200">
+						<div class="flex items-center gap-2">
+							<label for="items-per-page" class="text-sm text-gray-700">Items per page:</label>
+							<select
+								id="items-per-page"
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								bind:value={itemsPerPage}
+								onchange={() => currentPage = 1}
+							>
+								<option value={50}>50</option>
+								<option value={100}>100</option>
+								<option value={200}>200</option>
+								<option value={300}>300</option>
+								<option value={400}>400</option>
+								<option value={500}>500</option>
+							</select>
+						</div>
+
+						<div class="flex items-center gap-2 text-sm text-gray-700">
+							<span>
+								Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+							</span>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === 1}
+								onclick={() => currentPage = 1}
+							>
+								First
+							</button>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								Previous
+							</button>
+							<span class="px-3 py-1.5 text-sm text-gray-700">
+								Page {currentPage} of {totalPages}
+							</span>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next
+							</button>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage = totalPages}
+							>
+								Last
+							</button>
+						</div>
 					</div>
 				{/if}
 			</div>

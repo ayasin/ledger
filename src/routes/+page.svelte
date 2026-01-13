@@ -79,6 +79,12 @@
 	let filterQuery = $state('');
 	let uploadingFiles = $state<File[]>([]);
 
+	// Pagination state
+	let currentPage = $state(1);
+	let itemsPerPage = $state(50);
+	let totalItems = $state(0);
+	let totalPages = $state(0);
+
 	// Form state for new transaction
 	let newTransaction = $state({
 		transaction_date: new Date().toISOString().split('T')[0],
@@ -143,8 +149,8 @@
 			const parsed = parseQuery(filterQuery);
 			const queryString = buildQueryString(parsed);
 
-			// Build URL with filters
-			const url = `/api/transactions?limit=1000&sort=transaction_date&order=desc${queryString ? '&' + queryString : ''}`;
+			// Build URL with filters and pagination
+			const url = `/api/transactions?page=${currentPage}&limit=${itemsPerPage}&sort=transaction_date&order=desc${queryString ? '&' + queryString : ''}`;
 
 			const response = await fetch(url, {
 				headers: getAuthHeaders()
@@ -159,12 +165,16 @@
 			if (data.data) {
 				transactions = data.data;
 			}
+			if (data.meta) {
+				totalItems = data.meta.total;
+				totalPages = data.meta.pages;
+			}
 		} catch (error) {
 			console.error('Failed to fetch transactions:', error);
 		}
 	}
 
-	// Debounced filter effect
+	// Debounced filter effect (resets to page 1)
 	let filterTimeout: ReturnType<typeof setTimeout> | null = null;
 	$effect(() => {
 		if (!loading) {
@@ -178,6 +188,7 @@
 
 			// Debounce the filter query
 			filterTimeout = setTimeout(() => {
+				currentPage = 1; // Reset to first page on filter change
 				fetchTransactions();
 			}, 500);
 		}
@@ -187,6 +198,20 @@
 				clearTimeout(filterTimeout);
 			}
 		};
+	});
+
+	// Pagination effect (refetch when page or items per page changes)
+	$effect(() => {
+		if (!loading) {
+			// Track pagination changes
+			const page = currentPage;
+			const limit = itemsPerPage;
+
+			// Skip if this is triggered by the filter effect
+			if (filterTimeout) return;
+
+			fetchTransactions();
+		}
 	});
 
 	async function fetchAccounts() {
@@ -970,6 +995,68 @@
 						</div>
 					{/each}
 				</div>
+
+				<!-- Pagination Controls -->
+				{#if !loading && transactions.length > 0}
+					<div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200">
+						<div class="flex items-center gap-2">
+							<label for="items-per-page" class="text-sm text-gray-700">Items per page:</label>
+							<select
+								id="items-per-page"
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								bind:value={itemsPerPage}
+								onchange={() => currentPage = 1}
+							>
+								<option value={50}>50</option>
+								<option value={100}>100</option>
+								<option value={200}>200</option>
+								<option value={300}>300</option>
+								<option value={400}>400</option>
+								<option value={500}>500</option>
+							</select>
+						</div>
+
+						<div class="flex items-center gap-2 text-sm text-gray-700">
+							<span>
+								Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+							</span>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === 1}
+								onclick={() => currentPage = 1}
+							>
+								First
+							</button>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === 1}
+								onclick={() => currentPage--}
+							>
+								Previous
+							</button>
+							<span class="px-3 py-1.5 text-sm text-gray-700">
+								Page {currentPage} of {totalPages}
+							</span>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage++}
+							>
+								Next
+							</button>
+							<button
+								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === totalPages}
+								onclick={() => currentPage = totalPages}
+							>
+								Last
+							</button>
+						</div>
+					</div>
+				{/if}
 			{/if}
 		</Card>
 	</main>
