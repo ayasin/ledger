@@ -89,6 +89,7 @@
 			filterTimeout = setTimeout(() => {
 				currentPage = 1; // Reset to first page on filter change
 				fetchTransactions();
+				filterTimeout = null; // Clear the timeout reference after fetching
 			}, 500);
 		}
 
