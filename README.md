@@ -1,38 +1,17 @@
-# sv
+# Spending Ledger
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This is a spending ledger designed to work with multiple currencies and make tax reporting easier.
 
-## Creating a project
+# Getting started
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Downlaod and install node if you don't already have it
+- Clone this repo into a folder of your choice
+- Copy .env.example to .env
+- Edit the JWT_SECRET to be something that's not the default value
+- Open a terminal in the directory you cloned the repo (if you haven't already)
+- Run `npm i`
+- Run `npm db:migrate`
+- Run `./scripts/user-cli.ts` and add your first user
+- Run `npm run dev` to start the server
 
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Optionally (**highly recommended**) you can also run the backup daemon to backup changes. to do so, in a separate terminal window run `./scripts/backup-daemon.ts`. This will backup the database every hour if there are changes, and keep 12 versions.

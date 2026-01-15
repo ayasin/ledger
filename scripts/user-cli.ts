@@ -6,7 +6,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import { users } from '../src/lib/server/db/schema.js';
+import { users } from '../src/lib/server/db/schema.ts';
 import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
