@@ -919,7 +919,7 @@
 					{#each transactions as transaction}
 						<div
 							class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow p-4 cursor-pointer overflow-hidden"
-							onclick={() => handleViewTransaction(transaction.id)}
+							onclick={() => handleEditTransaction(transaction.id)}
 							role="button"
 							tabindex="0"
 							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleViewTransaction(transaction.id); }}
@@ -985,11 +985,11 @@
 								</div>
 								<div class="flex justify-end gap-3">
 									<button
-										onclick={(e) => { e.stopPropagation(); handleEditTransaction(transaction.id); }}
+										onclick={(e) => { e.stopPropagation(); handleViewTransaction(transaction.id); }}
 										class="text-gray-600 hover:text-gray-900 transition-colors"
-										title="Edit transaction"
+										title="View transaction"
 									>
-										<i class="fas fa-edit"></i>
+										<i class="fas fa-eye"></i>
 									</button>
 								</div>
 							</div>
