@@ -125,9 +125,6 @@ async function addUser() {
 		process.exit(1);
 	}
 
-	const isActiveInput = await readline.question('Active? (Y/n): ');
-	const isActive = isActiveInput.toLowerCase() !== 'n';
-
 	// Hash password and create user
 	const passwordHash = await hashPassword(password);
 	try {
@@ -137,7 +134,7 @@ async function addUser() {
 				email,
 				name,
 				password_hash: passwordHash,
-				is_active: isActive
+				is_active: true
 			})
 			.returning();
 
