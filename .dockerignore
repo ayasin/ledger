@@ -6,10 +6,6 @@ npm-debug.log
 build
 .svelte-kit
 
-# Development files
-.env
-.env.*
-!.env.example
 
 # Database (will be mounted as volume)
 data

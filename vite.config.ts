@@ -9,7 +9,7 @@ export default defineConfig({
 		},
 		port: 1815,
 		strictPort: true,
-		allowedHosts: ['yasin.ngrok.io']
+		host: true,
 	},
 	logLevel: 'info',
 	clearScreen: false
