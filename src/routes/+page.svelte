@@ -3,6 +3,7 @@
 	import Card from '$lib/components/Card.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import BatchEditModal from '$lib/components/BatchEditModal.svelte';
 	import TextInput from '$lib/components/TextInput.svelte';
 	import Typeahead from '$lib/components/Typeahead.svelte';
 	import { confirm } from '$lib/stores/confirmationStore';
@@ -74,6 +75,7 @@
 	let addTransactionModalOpen = $state(false);
 	let viewTransactionModalOpen = $state(false);
 	let editTransactionModalOpen = $state(false);
+	let batchEditModalOpen = $state(false);
 	let selectedTransaction = $state<Transaction | null>(null);
 	let selectedTransactionAttachments = $state<Attachment[]>([]);
 	let filterQuery = $state('');
@@ -863,15 +865,23 @@
 				<h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
 				<p class="mt-1 text-sm text-gray-600">Manage your transactions</p>
 			</div>
-			<Button onclick={() => {
-				uploadingFiles = [];
-				addTransactionModalOpen = true;
-			}}>
-				<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-				</svg>
-				Add Transaction
-			</Button>
+			<div class="flex gap-3">
+				<Button variant="outline" onclick={() => batchEditModalOpen = true}>
+					<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+					</svg>
+					Batch Edit
+				</Button>
+				<Button onclick={() => {
+					uploadingFiles = [];
+					addTransactionModalOpen = true;
+				}}>
+					<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+					</svg>
+					Add Transaction
+				</Button>
+			</div>
 		</div>
 
 		<Card>
@@ -1656,3 +1666,13 @@
 		</div>
 	{/snippet}
 </Modal>
+
+<BatchEditModal
+	bind:open={batchEditModalOpen}
+	{categories}
+	{tags}
+	{getAuthHeaders}
+	onComplete={fetchTransactions}
+	{createCategory}
+	{createTag}
+/>
