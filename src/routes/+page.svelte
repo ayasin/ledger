@@ -884,11 +884,11 @@
 					<TextInput
 						label=""
 						type="text"
-						placeholder='category:groceries and tag:personal'
+						placeholder='category:groceries and counterparty:amazon'
 						bind:value={filterQuery}
 					/>
 					<p class="mt-1 text-xs text-gray-500 wrap-break-word">
-						Supports: <code class="bg-gray-100 px-1 py-0.5 rounded">and</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">or</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">()</code> grouping, <code class="bg-gray-100 px-1 py-0.5 rounded">category:-</code> (empty)
+						Filter by <code class="bg-gray-100 px-1 py-0.5 rounded">category:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">tag:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">account:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">counterparty:</code>. Supports <code class="bg-gray-100 px-1 py-0.5 rounded">and</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">or</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">()</code>, <code class="bg-gray-100 px-1 py-0.5 rounded">:-</code> (empty)
 					</p>
 				</div>
 			</div>

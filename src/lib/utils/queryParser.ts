@@ -3,7 +3,7 @@ export interface FilterNode {
 	type: 'filter' | 'group';
 
 	// For filter nodes:
-	field?: 'category' | 'tag' | 'account';
+	field?: 'category' | 'tag' | 'account' | 'counterparty';
 	value?: string;
 	isEmpty?: boolean; // true if value is "-" meaning filter for empty/null
 
@@ -22,7 +22,7 @@ export interface ParsedQuery {
 
 // Legacy structure kept for backward compatibility
 export interface FilterExpression {
-	field: 'category' | 'tag' | 'account';
+	field: 'category' | 'tag' | 'account' | 'counterparty';
 	value: string;
 	isEmpty?: boolean;
 	operator?: 'and' | 'or';
@@ -34,7 +34,7 @@ type Token =
 	| { type: 'rparen' }
 	| { type: 'and' }
 	| { type: 'or' }
-	| { type: 'filter'; field: 'category' | 'tag' | 'account'; value: string; isEmpty: boolean }
+	| { type: 'filter'; field: 'category' | 'tag' | 'account' | 'counterparty'; value: string; isEmpty: boolean }
 	| { type: 'eof' };
 
 class Tokenizer {
@@ -90,9 +90,9 @@ class Tokenizer {
 			}
 
 			// Check for filter (field:value or field:"quoted value")
-			const filterMatch = query.substring(i).match(/^(category|tag|account):("([^"]+)"|(\S+))/i);
+			const filterMatch = query.substring(i).match(/^(category|tag|account|counterparty):("([^"]+)"|(\S+))/i);
 			if (filterMatch) {
-				const field = filterMatch[1].toLowerCase() as 'category' | 'tag' | 'account';
+				const field = filterMatch[1].toLowerCase() as 'category' | 'tag' | 'account' | 'counterparty';
 				const value = filterMatch[3] || filterMatch[4];
 				this.tokens.push({
 					type: 'filter',

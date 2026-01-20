@@ -21,6 +21,7 @@ export interface TransactionFilter extends ListOptions {
 	category?: string;
 	tag?: string;
 	account?: string;
+	counterparty?: string;
 	line_level_filter?: boolean; // When true, filter lines within transactions
 	filter_expr?: string; // JSON-encoded filter expression tree
 }
@@ -28,7 +29,7 @@ export interface TransactionFilter extends ListOptions {
 // Filter expression tree node (matches queryParser.ts)
 interface FilterNode {
 	type: 'filter' | 'group';
-	field?: 'category' | 'tag' | 'account';
+	field?: 'category' | 'tag' | 'account' | 'counterparty';
 	value?: string;
 	operator?: 'and' | 'or';
 	children?: FilterNode[];
@@ -352,6 +353,8 @@ export class TransactionRepository {
 			return this.getTagTransactionIds(node.value || '');
 		} else if (node.field === 'account') {
 			return this.getAccountTransactionIds(node.value || '');
+		} else if (node.field === 'counterparty') {
+			return this.getCounterpartyTransactionIds(node.value || '');
 		}
 		return [];
 	}
@@ -438,6 +441,29 @@ export class TransactionRepository {
 			.all();
 
 		return txWithAccount.map(t => t.id);
+	}
+
+	// Get transaction IDs matching a counterparty filter (case-insensitive partial match)
+	private getCounterpartyTransactionIds(counterpartyValue: string): number[] {
+		if (counterpartyValue === '~empty~') {
+			// Find transactions with null or empty counterparty
+			const txWithoutCounterparty = this.db
+				.select({ id: transactions.id })
+				.from(transactions)
+				.where(isNull(transactions.counterparty))
+				.all();
+			return txWithoutCounterparty.map(t => t.id);
+		}
+
+		// Case-insensitive partial match using LIKE
+		// SQLite LIKE is case-insensitive for ASCII by default
+		const txWithCounterparty = this.db
+			.select({ id: transactions.id })
+			.from(transactions)
+			.where(like(transactions.counterparty, `%${counterpartyValue}%`))
+			.all();
+
+		return txWithCounterparty.map(t => t.id);
 	}
 
 	// Check if a transaction line matches a filter node (for line-level filtering)

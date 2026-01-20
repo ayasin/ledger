@@ -321,13 +321,11 @@
 					<div class="flex-1">
 						<TextInput
 							bind:value={filterQuery}
-							placeholder="category:groceries and tag:personal"
+							placeholder="category:groceries and counterparty:amazon"
 							label="Filter Query"
 						/>
 						<p class="mt-1 text-xs text-gray-500 break-words">
-							Examples:
-							<code class="bg-gray-100 px-1 py-0.5 rounded text-xs">(category:a or category:b) and tag:t</code>,
-							<code class="bg-gray-100 px-1 py-0.5 rounded text-xs">category:-</code>
+							Filter by <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">category:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">tag:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">account:</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">counterparty:</code>. Supports <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">and</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">or</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">()</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">:-</code> (empty)
 						</p>
 					</div>
 					<Button

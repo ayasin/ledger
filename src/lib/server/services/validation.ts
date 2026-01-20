@@ -145,6 +145,7 @@ transactionFilterSchema = listQuerySchema.extend({
 	category: z.string().optional(),
 	tag: z.string().optional(),
 	account: z.string().optional(),
+	counterparty: z.string().optional(),
 	line_level_filter: z.coerce.boolean().optional(),
 	filter_expr: z.string().optional() // JSON-encoded filter expression tree
 });
