@@ -64,6 +64,7 @@
 	let itemsPerPage = $state(50);
 	let totalItems = $state(0);
 	let totalPages = $state(0);
+	let filteredSum = $state<number | null>(null);
 
 	onMount(async () => {
 		try {
@@ -144,6 +145,7 @@
 			if (data.meta) {
 				totalItems = data.meta.total;
 				totalPages = data.meta.pages;
+				filteredSum = data.meta.sum ?? null;
 			}
 		} catch (error) {
 			console.error('Failed to fetch transactions:', error);
@@ -349,12 +351,15 @@
 					</Button>
 				</div>
 
-				<!-- Results Count -->
+				<!-- Results Summary -->
 				<div class="text-sm text-gray-600">
 					{#if loading}
 						Loading...
 					{:else}
-						Showing {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+						<span>{totalItems} transaction{totalItems !== 1 ? 's' : ''} found</span>
+						{#if filteredSum !== null}
+							<span class="ml-4 font-medium">Total: ${formatCurrency(filteredSum)}</span>
+						{/if}
 					{/if}
 				</div>
 

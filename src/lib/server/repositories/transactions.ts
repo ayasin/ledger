@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, count, gte, lte, inArray, like, isNull, notInArray } from 'drizzle-orm';
+import { eq, and, desc, asc, count, gte, lte, inArray, like, isNull, notInArray, sum } from 'drizzle-orm';
 import type { Database } from '$lib/server/db';
 import {
 	transactions,
@@ -245,6 +245,82 @@ export class TransactionRepository {
 			.where(whereClause)
 			.all();
 
+		// Calculate sum of filtered line amounts when filters are applied
+		let filteredLinesSum: number | null = null;
+		const hasFilters = !!(filter_expr || category || tag || account || filter.counterparty);
+
+		console.log('Sum calculation debug:', { hasFilters, line_level_filter, filter_expr: !!filter_expr });
+
+		if (hasFilters && line_level_filter) {
+			// Get all transaction IDs that match the filter (not just current page)
+			const allFilteredTxIds = this.db
+				.select({ id: transactions.id })
+				.from(transactions)
+				.where(whereClause)
+				.all()
+				.map(t => t.id);
+
+			if (allFilteredTxIds.length > 0) {
+				// Build line-level filter conditions if using filter tree
+				if (filterTree) {
+					// Get all lines for filtered transactions
+					const allLines = this.db
+						.select()
+						.from(transactionLines)
+						.where(inArray(transactionLines.transaction_id, allFilteredTxIds))
+						.all();
+
+					// Apply line-level filtering and sum
+					const filteredLines = allLines.filter(line => this.lineMatchesFilter(line, filterTree));
+					filteredLinesSum = filteredLines.reduce((acc, line) => acc + line.amount_cents, 0);
+				} else if (category) {
+					// Legacy category filtering
+					if (category === '~empty~') {
+						const [{ value }] = this.db
+							.select({ value: sum(transactionLines.amount_cents) })
+							.from(transactionLines)
+							.where(and(
+								inArray(transactionLines.transaction_id, allFilteredTxIds),
+								isNull(transactionLines.category_id)
+							))
+							.all();
+						filteredLinesSum = Number(value) || 0;
+					} else {
+						const matchingCats = this.db
+							.select({ id: categories.id })
+							.from(categories)
+							.where(like(categories.name, `%${category}%`))
+							.all();
+						const catIds = matchingCats.map(c => c.id).filter((id): id is number => id !== null);
+
+						if (catIds.length > 0) {
+							const [{ value }] = this.db
+								.select({ value: sum(transactionLines.amount_cents) })
+								.from(transactionLines)
+								.where(and(
+									inArray(transactionLines.transaction_id, allFilteredTxIds),
+									inArray(transactionLines.category_id, catIds)
+								))
+								.all();
+							filteredLinesSum = Number(value) || 0;
+						} else {
+							filteredLinesSum = 0;
+						}
+					}
+				} else {
+					// No line-level filtering, sum all lines of filtered transactions
+					const [{ value }] = this.db
+						.select({ value: sum(transactionLines.amount_cents) })
+						.from(transactionLines)
+						.where(inArray(transactionLines.transaction_id, allFilteredTxIds))
+						.all();
+					filteredLinesSum = Number(value) || 0;
+				}
+			} else {
+				filteredLinesSum = 0;
+			}
+		}
+
 		// Fetch lines and tags for all transactions
 		const itemsWithLinesAndTags = items.map((transaction) => {
 			// Fetch all lines for this transaction
@@ -311,7 +387,8 @@ export class TransactionRepository {
 				total,
 				page,
 				limit,
-				pages: Math.ceil(total / limit)
+				pages: Math.ceil(total / limit),
+				...(filteredLinesSum !== null && { sum: filteredLinesSum })
 			}
 		};
 	}
