@@ -562,8 +562,36 @@
 							>
 								Previous
 							</button>
-							<span class="px-3 py-1.5 text-sm text-gray-700">
-								Page {currentPage} of {totalPages}
+							<span class="px-3 py-1.5 text-sm text-gray-700 flex items-center gap-1">
+								Page
+								<input
+									type="number"
+									min="1"
+									max={totalPages}
+									class="w-12 px-1 py-0.5 border border-gray-300 rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+									value={currentPage}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											const input = e.target as HTMLInputElement;
+											const page = parseInt(input.value, 10);
+											if (page >= 1 && page <= totalPages) {
+												currentPage = page;
+											} else {
+												input.value = String(currentPage);
+											}
+										}
+									}}
+									onblur={(e) => {
+										const input = e.target as HTMLInputElement;
+										const page = parseInt(input.value, 10);
+										if (page >= 1 && page <= totalPages) {
+											currentPage = page;
+										} else {
+											input.value = String(currentPage);
+										}
+									}}
+								/>
+								of {totalPages}
 							</span>
 							<button
 								class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
