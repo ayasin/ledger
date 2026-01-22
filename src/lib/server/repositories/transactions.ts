@@ -45,7 +45,7 @@ export interface TransactionWithLines extends Transaction {
 }
 
 export class TransactionRepository {
-	constructor(private db: Database) {}
+	constructor(private db: Database) { }
 
 	async findAll(filter: TransactionFilter = {}) {
 		const {
@@ -93,121 +93,121 @@ export class TransactionRepository {
 			// Legacy filter logic for backward compatibility
 			// Filter by account name
 			if (account) {
-			const matchingAccounts = this.db
-				.select({ id: accounts.id })
-				.from(accounts)
-				.where(like(accounts.name, `%${account}%`))
-				.all();
-
-			if (matchingAccounts.length > 0) {
-				conditions.push(inArray(transactions.account_id, matchingAccounts.map(a => a.id)));
-			} else {
-				// No matching accounts - return empty result
-				return { items: [], meta: { total: 0, page, limit, pages: 0 } };
-			}
-		}
-
-		// Filter by category name
-		let transactionIdsFromCategory: number[] | null = null;
-		if (category) {
-			// Check for empty/null category filter
-			if (category === '~empty~') {
-				// Find transactions with lines that have null category_id
-				const linesWithoutCategory = this.db
-					.select({ transaction_id: transactionLines.transaction_id })
-					.from(transactionLines)
-					.where(isNull(transactionLines.category_id))
+				const matchingAccounts = this.db
+					.select({ id: accounts.id })
+					.from(accounts)
+					.where(like(accounts.name, `%${account}%`))
 					.all();
 
-				transactionIdsFromCategory = [...new Set(linesWithoutCategory.map(l => l.transaction_id))];
-
-				if (transactionIdsFromCategory.length === 0) {
+				if (matchingAccounts.length > 0) {
+					conditions.push(inArray(transactions.account_id, matchingAccounts.map(a => a.id)));
+				} else {
+					// No matching accounts - return empty result
 					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
 				}
-			} else {
-				// Normal category name filtering
-				const matchingCategories = this.db
-					.select({ id: categories.id })
-					.from(categories)
-					.where(like(categories.name, `%${category}%`))
-					.all();
+			}
 
-				if (matchingCategories.length > 0) {
-					const categoryIds = matchingCategories.map(c => c.id).filter((id): id is number => id !== null && id !== undefined);
+			// Filter by category name
+			let transactionIdsFromCategory: number[] | null = null;
+			if (category) {
+				// Check for empty/null category filter
+				if (category === '~empty~') {
+					// Find transactions with lines that have null category_id
+					const linesWithoutCategory = this.db
+						.select({ transaction_id: transactionLines.transaction_id })
+						.from(transactionLines)
+						.where(isNull(transactionLines.category_id))
+						.all();
 
-					if (categoryIds.length > 0) {
-						const linesWithCategory = this.db
-							.select({ transaction_id: transactionLines.transaction_id })
-							.from(transactionLines)
-							.where(inArray(transactionLines.category_id, categoryIds))
-							.all();
+					transactionIdsFromCategory = [...new Set(linesWithoutCategory.map(l => l.transaction_id))];
 
-						transactionIdsFromCategory = [...new Set(linesWithCategory.map(l => l.transaction_id))];
+					if (transactionIdsFromCategory.length === 0) {
+						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+					}
+				} else {
+					// Normal category name filtering
+					const matchingCategories = this.db
+						.select({ id: categories.id })
+						.from(categories)
+						.where(like(categories.name, `%${category}%`))
+						.all();
 
-						if (transactionIdsFromCategory.length === 0) {
+					if (matchingCategories.length > 0) {
+						const categoryIds = matchingCategories.map(c => c.id).filter((id): id is number => id !== null && id !== undefined);
+
+						if (categoryIds.length > 0) {
+							const linesWithCategory = this.db
+								.select({ transaction_id: transactionLines.transaction_id })
+								.from(transactionLines)
+								.where(inArray(transactionLines.category_id, categoryIds))
+								.all();
+
+							transactionIdsFromCategory = [...new Set(linesWithCategory.map(l => l.transaction_id))];
+
+							if (transactionIdsFromCategory.length === 0) {
+								return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+							}
+						} else {
 							return { items: [], meta: { total: 0, page, limit, pages: 0 } };
 						}
 					} else {
 						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
 					}
-				} else {
-					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
 				}
 			}
-		}
 
-		// Filter by tag name
-		let transactionIdsFromTag: number[] | null = null;
-		if (tag) {
-			// Check for empty/null tag filter
-			if (tag === '~empty~') {
-				// Find all transaction IDs
-				const allTransactions = this.db
-					.select({ id: transactions.id })
-					.from(transactions)
-					.all();
-
-				// Find transactions that have tags
-				const txWithTags = this.db
-					.select({ transaction_id: transactionTags.transaction_id })
-					.from(transactionTags)
-					.all();
-
-				const txIdsWithTags = new Set(txWithTags.map(t => t.transaction_id));
-
-				// Filter for transactions without any tags
-				transactionIdsFromTag = allTransactions
-					.map(t => t.id)
-					.filter(id => !txIdsWithTags.has(id));
-
-				if (transactionIdsFromTag.length === 0) {
-					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
-				}
-			} else {
-				// Normal tag name filtering
-				const matchingTags = this.db
-					.select({ id: tags.id })
-					.from(tags)
-					.where(like(tags.name, `%${tag}%`))
-					.all();
-
-				if (matchingTags.length > 0) {
-					const txWithTag = this.db
-						.select({ transaction_id: transactionTags.transaction_id })
-						.from(transactionTags)
-						.where(inArray(transactionTags.tag_id, matchingTags.map(t => t.id)))
+			// Filter by tag name
+			let transactionIdsFromTag: number[] | null = null;
+			if (tag) {
+				// Check for empty/null tag filter
+				if (tag === '~empty~') {
+					// Find all transaction IDs
+					const allTransactions = this.db
+						.select({ id: transactions.id })
+						.from(transactions)
 						.all();
 
-					transactionIdsFromTag = [...new Set(txWithTag.map(t => t.transaction_id))];
+					// Find transactions that have tags
+					const txWithTags = this.db
+						.select({ transaction_id: transactionTags.transaction_id })
+						.from(transactionTags)
+						.all();
+
+					const txIdsWithTags = new Set(txWithTags.map(t => t.transaction_id));
+
+					// Filter for transactions without any tags
+					transactionIdsFromTag = allTransactions
+						.map(t => t.id)
+						.filter(id => !txIdsWithTags.has(id));
 
 					if (transactionIdsFromTag.length === 0) {
 						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
 					}
 				} else {
-					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+					// Normal tag name filtering
+					const matchingTags = this.db
+						.select({ id: tags.id })
+						.from(tags)
+						.where(like(tags.name, `%${tag}%`))
+						.all();
+
+					if (matchingTags.length > 0) {
+						const txWithTag = this.db
+							.select({ transaction_id: transactionTags.transaction_id })
+							.from(transactionTags)
+							.where(inArray(transactionTags.tag_id, matchingTags.map(t => t.id)))
+							.all();
+
+						transactionIdsFromTag = [...new Set(txWithTag.map(t => t.transaction_id))];
+
+						if (transactionIdsFromTag.length === 0) {
+							return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+						}
+					} else {
+						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+					}
 				}
 			}
-		}
 
 			// Combine category and tag filters (intersection)
 			if (transactionIdsFromCategory !== null && transactionIdsFromTag !== null) {
@@ -248,8 +248,6 @@ export class TransactionRepository {
 		// Calculate sum of filtered line amounts when filters are applied
 		let filteredLinesSum: number | null = null;
 		const hasFilters = !!(filter_expr || category || tag || account || filter.counterparty);
-
-		console.log('Sum calculation debug:', { hasFilters, line_level_filter, filter_expr: !!filter_expr });
 
 		if (hasFilters && line_level_filter) {
 			// Get all transaction IDs that match the filter (not just current page)
