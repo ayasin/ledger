@@ -66,6 +66,16 @@
 	let totalPages = $state(0);
 	let filteredSum = $state<number | null>(null);
 
+	// Scroll to top when page changes
+	let hasInitializedScroll = false;
+	$effect(() => {
+		currentPage;
+		if (hasInitializedScroll) {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+		hasInitializedScroll = true;
+	});
+
 	onMount(async () => {
 		try {
 			await fetchTransactions();

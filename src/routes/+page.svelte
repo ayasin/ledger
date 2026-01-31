@@ -87,6 +87,16 @@
 	let totalItems = $state(0);
 	let totalPages = $state(0);
 
+	// Scroll to top when page changes
+	let hasInitializedScroll = false;
+	$effect(() => {
+		currentPage;
+		if (hasInitializedScroll) {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+		hasInitializedScroll = true;
+	});
+
 	// Form state for new transaction
 	let newTransaction = $state({
 		transaction_date: new Date().toISOString().split('T')[0],
