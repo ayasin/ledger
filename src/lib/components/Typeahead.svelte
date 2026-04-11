@@ -35,7 +35,7 @@
 	let isOpen = $state(false);
 	let highlightedIndex = $state(0);
 	let inputElement: HTMLInputElement;
-	let dropdownElement: HTMLDivElement;
+	let dropdownElement = $state<HTMLDivElement>();
 	let isCreating = $state(false);
 
 	// Generate unique ID for accessibility

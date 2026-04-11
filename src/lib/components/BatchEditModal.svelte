@@ -10,6 +10,7 @@
 		transaction_date: Date;
 		account_id: number;
 		counterparty?: string | null;
+		memo?: string | null;
 		total_cents: number;
 		lines?: TransactionLine[];
 		tags?: Tag[];
@@ -59,6 +60,8 @@
 	let filterQuery = $state('');
 	let selectedCategory = $state<Category | null>(null);
 	let selectedTags = $state<Tag[]>([]);
+	let tagsToRemove = $state<Tag[]>([]);
+	let memoAppend = $state('');
 	let matchingTransactions = $state<Transaction[]>([]);
 	let eligibleTransactions = $state<Transaction[]>([]);
 	let loading = $state(false);
@@ -95,6 +98,8 @@
 			filterQuery = '';
 			selectedCategory = null;
 			selectedTags = [];
+			tagsToRemove = [];
+			memoAppend = '';
 			matchingTransactions = [];
 			eligibleTransactions = [];
 			appliedCount = 0;
@@ -147,13 +152,17 @@
 	}
 
 	async function handleApply() {
-		if (eligibleTransactions.length === 0) {
-			errorMessage = 'No eligible transactions to update';
+		if (matchingTransactions.length === 0) {
+			errorMessage = 'No transactions to update';
 			return;
 		}
 
-		if (!selectedCategory && selectedTags.length === 0) {
-			errorMessage = 'Please select a category or tags to apply';
+		const hasTagChanges = selectedTags.length > 0 || tagsToRemove.length > 0;
+		const hasMemoAppend = memoAppend.trim().length > 0;
+		const hasCategoryChange = !!selectedCategory && eligibleTransactions.length > 0;
+
+		if (!hasCategoryChange && !hasTagChanges && !hasMemoAppend) {
+			errorMessage = 'Please select something to apply';
 			return;
 		}
 
@@ -161,24 +170,39 @@
 		appliedCount = 0;
 		errorMessage = '';
 
-		try {
-			for (const transaction of eligibleTransactions) {
-				try {
-					// Update category on the transaction line if a category is selected
-					if (selectedCategory && transaction.lines && transaction.lines.length === 1) {
-						const line = transaction.lines[0];
-						const payload = {
-							lines: [{
-								amount_cents: line.amount_cents,
-								category_id: selectedCategory.id,
-								description: line.description || null
-							}]
-						};
+		const removeTagIds = new Set(tagsToRemove.map(t => t.id));
+		const addTagIds = selectedTags.map(t => t.id);
 
+		try {
+			for (const transaction of matchingTransactions) {
+				try {
+					const isEligibleForCategory =
+						!!selectedCategory &&
+						transaction.lines?.length === 1 &&
+						!transaction.lines[0].category_id;
+
+					// Build PATCH payload for memo and/or category
+					const patchPayload: Record<string, unknown> = {};
+
+					if (hasMemoAppend) {
+						const existing = transaction.memo?.trim() ?? '';
+						patchPayload.memo = existing ? `${existing} ${memoAppend.trim()}` : memoAppend.trim();
+					}
+
+					if (isEligibleForCategory) {
+						const line = transaction.lines![0];
+						patchPayload.lines = [{
+							amount_cents: line.amount_cents,
+							category_id: selectedCategory!.id,
+							description: line.description || null
+						}];
+					}
+
+					if (Object.keys(patchPayload).length > 0) {
 						const response = await fetch(`/api/transactions/${transaction.id}`, {
 							method: 'PATCH',
 							headers: getAuthHeaders(),
-							body: JSON.stringify(payload)
+							body: JSON.stringify(patchPayload)
 						});
 
 						if (!response.ok) {
@@ -187,12 +211,11 @@
 						}
 					}
 
-					// Update tags if any are selected
-					if (selectedTags.length > 0) {
-						// Merge existing tags with new tags (avoid duplicates)
-						const existingTagIds = transaction.tags?.map(t => t.id) || [];
-						const newTagIds = selectedTags.map(t => t.id);
-						const allTagIds = [...new Set([...existingTagIds, ...newTagIds])];
+					// Update tags if there are additions or removals
+					if (hasTagChanges) {
+						const existingTagIds = transaction.tags?.map(t => t.id) ?? [];
+						const afterRemove = existingTagIds.filter(id => !removeTagIds.has(id));
+						const allTagIds = [...new Set([...afterRemove, ...addTagIds])];
 
 						const tagResponse = await fetch(`/api/transactions/${transaction.id}/tags`, {
 							method: 'PUT',
@@ -254,13 +277,14 @@
 						Searching...
 					</div>
 				{:else if filterQuery.trim()}
-					<div class="text-sm">
-						<div class="text-gray-600">
-							<span class="font-medium">{matchingTransactions.length}</span> transactions match filter
+					<div class="text-sm space-y-1">
+						<div class="text-gray-900">
+							<span class="font-semibold text-blue-600">{matchingTransactions.length}</span>
+							<span class="text-gray-600"> transaction{matchingTransactions.length !== 1 ? 's' : ''} match — tags and memo apply to all</span>
 						</div>
-						<div class="text-gray-900 mt-1">
-							<span class="font-semibold text-blue-600">{eligibleTransactions.length}</span> eligible for batch edit
-							<span class="text-gray-500 text-xs">(single line, no category)</span>
+						<div class="text-gray-500">
+							<span class="font-medium text-gray-700">{eligibleTransactions.length}</span> eligible for category
+							<span class="text-xs">(single line, no category)</span>
 						</div>
 					</div>
 				{:else}
@@ -273,12 +297,12 @@
 
 		<!-- Apply Section -->
 		<div class="border border-blue-200 rounded-lg p-4 bg-blue-50">
-			<h3 class="text-sm font-medium text-blue-900 mb-3">Apply to Eligible Transactions</h3>
+			<h3 class="text-sm font-medium text-blue-900 mb-3">Apply to Matching Transactions</h3>
 
 			<div class="space-y-4">
 				<Typeahead
 					label="Category"
-					placeholder="Select category to apply..."
+					placeholder="Single-line only — select category to apply..."
 					bind:value={selectedCategory}
 					options={categories}
 					displayField="name"
@@ -288,8 +312,8 @@
 				/>
 
 				<Typeahead
-					label="Tags"
-					placeholder="Select tags to apply..."
+					label="Add tags"
+					placeholder="Select tags to add..."
 					bind:value={selectedTags}
 					options={tags}
 					displayField="name"
@@ -297,6 +321,23 @@
 					multiple={true}
 					creatable={!!createTag}
 					onCreate={createTag}
+				/>
+
+				<Typeahead
+					label="Remove tags"
+					placeholder="Select tags to remove..."
+					bind:value={tagsToRemove}
+					options={tags}
+					displayField="name"
+					valueField="id"
+					multiple={true}
+				/>
+
+				<TextInput
+					label="Append to memo"
+					type="text"
+					placeholder="Text to append to existing memo..."
+					bind:value={memoAppend}
 				/>
 			</div>
 
@@ -320,13 +361,13 @@
 		</Button>
 		<Button
 			onclick={handleApply}
-			disabled={applying || eligibleTransactions.length === 0 || (!selectedCategory && selectedTags.length === 0)}
+			disabled={applying || matchingTransactions.length === 0 || (!selectedCategory && selectedTags.length === 0 && tagsToRemove.length === 0 && !memoAppend.trim())}
 		>
 			{#if applying}
 				<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
 				Applying...
 			{:else}
-				Apply to {eligibleTransactions.length} Transaction{eligibleTransactions.length !== 1 ? 's' : ''}
+				Apply to {matchingTransactions.length} Transaction{matchingTransactions.length !== 1 ? 's' : ''}
 			{/if}
 		</Button>
 	{/snippet}

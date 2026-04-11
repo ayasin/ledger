@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '$lib/server/env';
 import type { User } from '$lib/server/db/schema';
 
