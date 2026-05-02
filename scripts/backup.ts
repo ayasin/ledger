@@ -50,7 +50,7 @@ async function main(): Promise<void> {
     if (result.status === 'skipped') {
       process.exit(0);
     } else if (result.status === 'success') {
-      process.exit(1);
+      process.exit(0);
     } else {
       // Error
       if (result.error) {

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import * as dotenv from 'dotenv';
 import cron from 'node-cron';
-import { resolve } from 'path';
+import { resolve, join } from 'path';
 import { performBackup, type BackupConfig } from './backup-lib.js';
+import { uploadToS3, rotateS3Backups, type S3BackupConfig } from './s3-lib.js';
 
 // Load environment variables
 dotenv.config();
@@ -24,10 +25,45 @@ function log(level: 'INFO' | 'WARN' | 'ERROR', message: string, ...args: unknown
   }
 }
 
+function buildS3Config(): S3BackupConfig | null {
+  const s3Region = process.env.S3_REGION;
+  const s3Bucket = process.env.S3_BUCKET;
+
+  if (!s3Region || !s3Bucket) {
+    return null;
+  }
+
+  const s3MaxBackups = parseInt(process.env.S3_MAX_BACKUPS || '30', 10);
+  if (s3MaxBackups < 1) {
+    log('WARN', 'S3_MAX_BACKUPS is less than 1, disabling S3 upload');
+    return null;
+  }
+
+  return {
+    region: s3Region,
+    bucket: s3Bucket,
+    prefix: process.env.S3_PREFIX,
+    endpoint: process.env.S3_ENDPOINT,
+    maxBackups: s3MaxBackups
+  };
+}
+
+async function runS3Upload(s3Config: S3BackupConfig, backupDir: string, backupFile: string): Promise<void> {
+  const backupPath = join(backupDir, backupFile);
+
+  log('INFO', `Uploading ${backupFile} to S3...`);
+  const s3Key = await uploadToS3(s3Config, backupPath, backupFile);
+  log('INFO', `Upload complete: s3://${s3Config.bucket}/${s3Key}`);
+
+  log('INFO', 'Rotating old S3 backups...');
+  await rotateS3Backups(s3Config);
+  log('INFO', 'S3 rotation complete.');
+}
+
 /**
  * Run a backup
  */
-async function runBackup(config: BackupConfig): Promise<void> {
+async function runBackup(config: BackupConfig, s3Config: S3BackupConfig | null): Promise<void> {
   if (isShuttingDown) {
     log('WARN', 'Shutdown in progress, skipping scheduled backup');
     return;
@@ -36,9 +72,18 @@ async function runBackup(config: BackupConfig): Promise<void> {
   log('INFO', 'Starting scheduled backup');
 
   currentBackupPromise = performBackup(config)
-    .then((result) => {
+    .then(async (result) => {
       if (result.status === 'success') {
         log('INFO', result.message);
+
+        // Upload to S3 if configured and a new file was created
+        if (s3Config && result.backupFile) {
+          try {
+            await runS3Upload(s3Config, config.backupDir, result.backupFile);
+          } catch (error) {
+            log('ERROR', 'S3 upload failed:', error);
+          }
+        }
       } else if (result.status === 'skipped') {
         log('INFO', result.message);
       } else {
@@ -94,12 +139,26 @@ function main(): void {
   const schedule = process.env.BACKUP_SCHEDULE || '0 * * * *'; // Every hour by default
   const backupOnStart = process.env.BACKUP_ON_START === 'true';
 
+  // Build optional S3 config
+  const s3Config = buildS3Config();
+
   log('INFO', 'Backup daemon starting...');
   log('INFO', `Schedule: ${schedule}`);
   log('INFO', `Database: ${dbPath}`);
   log('INFO', `Backup directory: ${backupDir}`);
   log('INFO', `Max backups: ${maxBackups}`);
   log('INFO', `Backup on start: ${backupOnStart}`);
+
+  if (s3Config) {
+    log('INFO', 'S3 offline backup: ENABLED');
+    log('INFO', `  S3 bucket: ${s3Config.bucket}`);
+    log('INFO', `  S3 region: ${s3Config.region}`);
+    log('INFO', `  S3 prefix: ${s3Config.prefix || '(none)'}`);
+    log('INFO', `  S3 endpoint: ${s3Config.endpoint || '(default)'}`);
+    log('INFO', `  Max S3 backups: ${s3Config.maxBackups}`);
+  } else {
+    log('INFO', 'S3 offline backup: DISABLED (set S3_REGION and S3_BUCKET to enable)');
+  }
 
   // Validate cron expression
   if (!cron.validate(schedule)) {
@@ -120,7 +179,7 @@ function main(): void {
   };
 
   // Schedule the backup task
-  const task = cron.schedule(schedule, () => runBackup(config), {
+  const task = cron.schedule(schedule, () => runBackup(config, s3Config), {
     scheduled: true,
     timezone: process.env.TZ || 'America/New_York'
   });
@@ -133,7 +192,7 @@ function main(): void {
   // Run backup immediately on startup if configured
   if (backupOnStart) {
     log('INFO', 'Running initial backup on startup...');
-    runBackup(config);
+    runBackup(config, s3Config);
   }
 }
 

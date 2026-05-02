@@ -17,7 +17,8 @@
 		"db:studio": "drizzle-kit studio",
 		"user-cli": "tsx scripts/user-cli.ts",
 		"backup": "tsx scripts/backup.ts",
-		"backup:daemon": "tsx scripts/backup-daemon.ts"
+		"backup:daemon": "tsx scripts/backup-daemon.ts",
+		"backup:offline": "tsx scripts/backup-offline.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",
@@ -38,6 +39,7 @@
 		"vite": "^7.2.6"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1041.0",
 		"@fortawesome/fontawesome-free": "^7.1.0",
 		"@tailwindcss/postcss": "^4.1.18",
 		"bcryptjs": "^3.0.3",
