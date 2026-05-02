@@ -1,18 +1,30 @@
-import { eq, and, desc, asc, count, gte, lte, inArray, like, isNull, notInArray, sum } from 'drizzle-orm';
-import type { Database } from '$lib/server/db';
 import {
-	transactions,
-	transactionLines,
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	inArray,
+	isNull,
+	like,
+	lte,
+	sum,
+} from "drizzle-orm";
+import type { Database } from "$lib/server/db";
+import {
 	accounts,
 	categories,
-	tags,
-	transactionTags,
-	type Transaction,
 	type NewTransaction,
-	type TransactionLine
-} from '$lib/server/db/schema';
-import type { ListOptions } from '$lib/types/api';
-import type { TransactionLineInput } from '$lib/server/services/accounting';
+	tags,
+	type Transaction,
+	type TransactionLine,
+	transactionLines,
+	transactions,
+	transactionTags,
+} from "$lib/server/db/schema";
+import type { ListOptions } from "$lib/types/api";
+import type { TransactionLineInput } from "$lib/server/services/accounting";
 
 export interface TransactionFilter extends ListOptions {
 	status?: string;
@@ -28,10 +40,10 @@ export interface TransactionFilter extends ListOptions {
 
 // Filter expression tree node (matches queryParser.ts)
 interface FilterNode {
-	type: 'filter' | 'group';
-	field?: 'category' | 'tag' | 'account' | 'counterparty';
+	type: "filter" | "group";
+	field?: "category" | "tag" | "account" | "counterparty";
 	value?: string;
-	operator?: 'and' | 'or';
+	operator?: "and" | "or";
 	children?: FilterNode[];
 }
 
@@ -45,14 +57,14 @@ export interface TransactionWithLines extends Transaction {
 }
 
 export class TransactionRepository {
-	constructor(private db: Database) { }
+	constructor(private db: Database) {}
 
 	async findAll(filter: TransactionFilter = {}) {
 		const {
 			page = 1,
 			limit = filter.limit || 50,
-			sort = 'transaction_date',
-			order = 'desc',
+			sort = "transaction_date",
+			order = "desc",
 			status,
 			from_date,
 			to_date,
@@ -60,7 +72,7 @@ export class TransactionRepository {
 			tag,
 			account,
 			line_level_filter = false,
-			filter_expr
+			filter_expr,
 		} = filter;
 		const offset = (page - 1) * limit;
 
@@ -70,14 +82,18 @@ export class TransactionRepository {
 			try {
 				filterTree = JSON.parse(filter_expr);
 			} catch (e) {
-				console.error('Failed to parse filter_expr:', e);
+				console.error("Failed to parse filter_expr:", e);
 			}
 		}
 
 		const conditions = [];
 		if (status) conditions.push(eq(transactions.status, status as any));
-		if (from_date) conditions.push(gte(transactions.transaction_date, from_date));
-		if (to_date) conditions.push(lte(transactions.transaction_date, to_date));
+		if (from_date) {
+			conditions.push(gte(transactions.transaction_date, from_date));
+		}
+		if (to_date) {
+			conditions.push(lte(transactions.transaction_date, to_date));
+		}
 
 		// Determine transaction IDs from filters
 		let filteredTransactionIds: number[] | null = null;
@@ -100,10 +116,18 @@ export class TransactionRepository {
 					.all();
 
 				if (matchingAccounts.length > 0) {
-					conditions.push(inArray(transactions.account_id, matchingAccounts.map(a => a.id)));
+					conditions.push(
+						inArray(
+							transactions.account_id,
+							matchingAccounts.map((a) => a.id),
+						),
+					);
 				} else {
 					// No matching accounts - return empty result
-					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+					return {
+						items: [],
+						meta: { total: 0, page, limit, pages: 0 },
+					};
 				}
 			}
 
@@ -111,18 +135,27 @@ export class TransactionRepository {
 			let transactionIdsFromCategory: number[] | null = null;
 			if (category) {
 				// Check for empty/null category filter
-				if (category === '~empty~') {
+				if (category === "~empty~") {
 					// Find transactions with lines that have null category_id
 					const linesWithoutCategory = this.db
-						.select({ transaction_id: transactionLines.transaction_id })
+						.select({
+							transaction_id: transactionLines.transaction_id,
+						})
 						.from(transactionLines)
 						.where(isNull(transactionLines.category_id))
 						.all();
 
-					transactionIdsFromCategory = [...new Set(linesWithoutCategory.map(l => l.transaction_id))];
+					transactionIdsFromCategory = [
+						...new Set(
+							linesWithoutCategory.map((l) => l.transaction_id),
+						),
+					];
 
 					if (transactionIdsFromCategory.length === 0) {
-						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+						return {
+							items: [],
+							meta: { total: 0, page, limit, pages: 0 },
+						};
 					}
 				} else {
 					// Normal category name filtering
@@ -133,25 +166,51 @@ export class TransactionRepository {
 						.all();
 
 					if (matchingCategories.length > 0) {
-						const categoryIds = matchingCategories.map(c => c.id).filter((id): id is number => id !== null && id !== undefined);
+						const categoryIds = matchingCategories.map((c) => c.id)
+							.filter((id): id is number =>
+								id !== null && id !== undefined
+							);
 
 						if (categoryIds.length > 0) {
 							const linesWithCategory = this.db
-								.select({ transaction_id: transactionLines.transaction_id })
+								.select({
+									transaction_id:
+										transactionLines.transaction_id,
+								})
 								.from(transactionLines)
-								.where(inArray(transactionLines.category_id, categoryIds))
+								.where(
+									inArray(
+										transactionLines.category_id,
+										categoryIds,
+									),
+								)
 								.all();
 
-							transactionIdsFromCategory = [...new Set(linesWithCategory.map(l => l.transaction_id))];
+							transactionIdsFromCategory = [
+								...new Set(
+									linesWithCategory.map((l) =>
+										l.transaction_id
+									),
+								),
+							];
 
 							if (transactionIdsFromCategory.length === 0) {
-								return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+								return {
+									items: [],
+									meta: { total: 0, page, limit, pages: 0 },
+								};
 							}
 						} else {
-							return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+							return {
+								items: [],
+								meta: { total: 0, page, limit, pages: 0 },
+							};
 						}
 					} else {
-						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+						return {
+							items: [],
+							meta: { total: 0, page, limit, pages: 0 },
+						};
 					}
 				}
 			}
@@ -160,7 +219,7 @@ export class TransactionRepository {
 			let transactionIdsFromTag: number[] | null = null;
 			if (tag) {
 				// Check for empty/null tag filter
-				if (tag === '~empty~') {
+				if (tag === "~empty~") {
 					// Find all transaction IDs
 					const allTransactions = this.db
 						.select({ id: transactions.id })
@@ -169,19 +228,26 @@ export class TransactionRepository {
 
 					// Find transactions that have tags
 					const txWithTags = this.db
-						.select({ transaction_id: transactionTags.transaction_id })
+						.select({
+							transaction_id: transactionTags.transaction_id,
+						})
 						.from(transactionTags)
 						.all();
 
-					const txIdsWithTags = new Set(txWithTags.map(t => t.transaction_id));
+					const txIdsWithTags = new Set(
+						txWithTags.map((t) => t.transaction_id),
+					);
 
 					// Filter for transactions without any tags
 					transactionIdsFromTag = allTransactions
-						.map(t => t.id)
-						.filter(id => !txIdsWithTags.has(id));
+						.map((t) => t.id)
+						.filter((id) => !txIdsWithTags.has(id));
 
 					if (transactionIdsFromTag.length === 0) {
-						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+						return {
+							items: [],
+							meta: { total: 0, page, limit, pages: 0 },
+						};
 					}
 				} else {
 					// Normal tag name filtering
@@ -193,42 +259,72 @@ export class TransactionRepository {
 
 					if (matchingTags.length > 0) {
 						const txWithTag = this.db
-							.select({ transaction_id: transactionTags.transaction_id })
+							.select({
+								transaction_id: transactionTags.transaction_id,
+							})
 							.from(transactionTags)
-							.where(inArray(transactionTags.tag_id, matchingTags.map(t => t.id)))
+							.where(
+								inArray(
+									transactionTags.tag_id,
+									matchingTags.map((t) => t.id),
+								),
+							)
 							.all();
 
-						transactionIdsFromTag = [...new Set(txWithTag.map(t => t.transaction_id))];
+						transactionIdsFromTag = [
+							...new Set(txWithTag.map((t) => t.transaction_id)),
+						];
 
 						if (transactionIdsFromTag.length === 0) {
-							return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+							return {
+								items: [],
+								meta: { total: 0, page, limit, pages: 0 },
+							};
 						}
 					} else {
-						return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+						return {
+							items: [],
+							meta: { total: 0, page, limit, pages: 0 },
+						};
 					}
 				}
 			}
 
 			// Combine category and tag filters (intersection)
-			if (transactionIdsFromCategory !== null && transactionIdsFromTag !== null) {
-				const intersectionIds = transactionIdsFromCategory.filter(id => transactionIdsFromTag!.includes(id));
+			if (
+				transactionIdsFromCategory !== null &&
+				transactionIdsFromTag !== null
+			) {
+				const intersectionIds = transactionIdsFromCategory.filter(
+					(id) => transactionIdsFromTag!.includes(id),
+				);
 				if (intersectionIds.length > 0) {
 					conditions.push(inArray(transactions.id, intersectionIds));
 				} else {
-					return { items: [], meta: { total: 0, page, limit, pages: 0 } };
+					return {
+						items: [],
+						meta: { total: 0, page, limit, pages: 0 },
+					};
 				}
 			} else if (transactionIdsFromCategory !== null) {
-				conditions.push(inArray(transactions.id, transactionIdsFromCategory));
+				conditions.push(
+					inArray(transactions.id, transactionIdsFromCategory),
+				);
 			} else if (transactionIdsFromTag !== null) {
-				conditions.push(inArray(transactions.id, transactionIdsFromTag));
+				conditions.push(
+					inArray(transactions.id, transactionIdsFromTag),
+				);
 			}
 		} // End of legacy filter logic
 
-		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+		const whereClause = conditions.length > 0
+			? and(...conditions)
+			: undefined;
 
-		const orderByColumn =
-			sort === 'reference' ? transactions.reference : transactions.transaction_date;
-		const orderFn = order === 'desc' ? desc : asc;
+		const orderByColumn = sort === "reference"
+			? transactions.reference
+			: transactions.transaction_date;
+		const orderFn = order === "desc" ? desc : asc;
 
 		const items = this.db
 			.select()
@@ -247,7 +343,8 @@ export class TransactionRepository {
 
 		// Calculate sum of filtered line amounts when filters are applied
 		let filteredLinesSum: number | null = null;
-		const hasFilters = !!(filter_expr || category || tag || account || filter.counterparty);
+		const hasFilters = !!(filter_expr || category || tag || account ||
+			filter.counterparty);
 
 		if (hasFilters && line_level_filter) {
 			// Get all transaction IDs that match the filter (not just current page)
@@ -256,7 +353,7 @@ export class TransactionRepository {
 				.from(transactions)
 				.where(whereClause)
 				.all()
-				.map(t => t.id);
+				.map((t) => t.id);
 
 			if (allFilteredTxIds.length > 0) {
 				// Build line-level filter conditions if using filter tree
@@ -265,21 +362,36 @@ export class TransactionRepository {
 					const allLines = this.db
 						.select()
 						.from(transactionLines)
-						.where(inArray(transactionLines.transaction_id, allFilteredTxIds))
+						.where(
+							inArray(
+								transactionLines.transaction_id,
+								allFilteredTxIds,
+							),
+						)
 						.all();
 
 					// Apply line-level filtering and sum
-					const filteredLines = allLines.filter(line => this.lineMatchesFilter(line, filterTree));
-					filteredLinesSum = filteredLines.reduce((acc, line) => acc + line.amount_cents, 0);
+					const filteredLines = allLines.filter((line) =>
+						this.lineMatchesFilter(line, filterTree)
+					);
+					filteredLinesSum = filteredLines.reduce(
+						(acc, line) => acc + line.amount_cents,
+						0,
+					);
 				} else if (category) {
 					// Legacy category filtering
-					if (category === '~empty~') {
+					if (category === "~empty~") {
 						const [{ value }] = this.db
-							.select({ value: sum(transactionLines.amount_cents) })
+							.select({
+								value: sum(transactionLines.amount_cents),
+							})
 							.from(transactionLines)
 							.where(and(
-								inArray(transactionLines.transaction_id, allFilteredTxIds),
-								isNull(transactionLines.category_id)
+								inArray(
+									transactionLines.transaction_id,
+									allFilteredTxIds,
+								),
+								isNull(transactionLines.category_id),
 							))
 							.all();
 						filteredLinesSum = Number(value) || 0;
@@ -289,15 +401,25 @@ export class TransactionRepository {
 							.from(categories)
 							.where(like(categories.name, `%${category}%`))
 							.all();
-						const catIds = matchingCats.map(c => c.id).filter((id): id is number => id !== null);
+						const catIds = matchingCats.map((c) => c.id).filter((
+							id,
+						): id is number => id !== null);
 
 						if (catIds.length > 0) {
 							const [{ value }] = this.db
-								.select({ value: sum(transactionLines.amount_cents) })
+								.select({
+									value: sum(transactionLines.amount_cents),
+								})
 								.from(transactionLines)
 								.where(and(
-									inArray(transactionLines.transaction_id, allFilteredTxIds),
-									inArray(transactionLines.category_id, catIds)
+									inArray(
+										transactionLines.transaction_id,
+										allFilteredTxIds,
+									),
+									inArray(
+										transactionLines.category_id,
+										catIds,
+									),
 								))
 								.all();
 							filteredLinesSum = Number(value) || 0;
@@ -310,7 +432,12 @@ export class TransactionRepository {
 					const [{ value }] = this.db
 						.select({ value: sum(transactionLines.amount_cents) })
 						.from(transactionLines)
-						.where(inArray(transactionLines.transaction_id, allFilteredTxIds))
+						.where(
+							inArray(
+								transactionLines.transaction_id,
+								allFilteredTxIds,
+							),
+						)
 						.all();
 					filteredLinesSum = Number(value) || 0;
 				}
@@ -332,12 +459,16 @@ export class TransactionRepository {
 			if (line_level_filter) {
 				if (filterTree) {
 					// Use new filter tree evaluation for line-level filtering
-					lines = lines.filter(line => this.lineMatchesFilter(line, filterTree));
+					lines = lines.filter((line) =>
+						this.lineMatchesFilter(line, filterTree)
+					);
 				} else if (category) {
 					// Legacy line-level filtering
-					if (category === '~empty~') {
+					if (category === "~empty~") {
 						// Only include lines with null category_id
-						lines = lines.filter(line => line.category_id === null);
+						lines = lines.filter((line) =>
+							line.category_id === null
+						);
 					} else {
 						// Get matching category IDs
 						const matchingCategories = this.db
@@ -346,11 +477,12 @@ export class TransactionRepository {
 							.where(like(categories.name, `%${category}%`))
 							.all();
 
-						const categoryIds = matchingCategories.map(c => c.id);
+						const categoryIds = matchingCategories.map((c) => c.id);
 
 						// Only include lines that match the category filter
-						lines = lines.filter(line =>
-							line.category_id !== null && categoryIds.includes(line.category_id)
+						lines = lines.filter((line) =>
+							line.category_id !== null &&
+							categoryIds.includes(line.category_id)
 						);
 					}
 				}
@@ -361,7 +493,7 @@ export class TransactionRepository {
 				.select({
 					tag_id: transactionTags.tag_id,
 					tag_name: tags.name,
-					tag_color: tags.color
+					tag_color: tags.color,
 				})
 				.from(transactionTags)
 				.innerJoin(tags, eq(transactionTags.tag_id, tags.id))
@@ -371,11 +503,11 @@ export class TransactionRepository {
 			return {
 				...transaction,
 				lines,
-				tags: transactionTagsData.map(t => ({
+				tags: transactionTagsData.map((t) => ({
 					id: t.tag_id,
 					name: t.tag_name,
-					color: t.tag_color
-				}))
+					color: t.tag_color,
+				})),
 			};
 		});
 
@@ -386,24 +518,30 @@ export class TransactionRepository {
 				page,
 				limit,
 				pages: Math.ceil(total / limit),
-				...(filteredLinesSum !== null && { sum: filteredLinesSum })
-			}
+				...(filteredLinesSum !== null && { sum: filteredLinesSum }),
+			},
 		};
 	}
 
 	// Evaluate filter tree to get matching transaction IDs
 	private evaluateFilterTree(node: FilterNode): number[] {
-		if (node.type === 'filter') {
+		if (node.type === "filter") {
 			return this.evaluateFilterNode(node);
 		}
 
-		if (node.type === 'group' && node.children && node.children.length > 0) {
-			const childResults = node.children.map(child => this.evaluateFilterTree(child));
+		if (
+			node.type === "group" && node.children && node.children.length > 0
+		) {
+			const childResults = node.children.map((child) =>
+				this.evaluateFilterTree(child)
+			);
 
-			if (node.operator === 'or') {
+			if (node.operator === "or") {
 				// Union of all child results
 				const unionSet = new Set<number>();
-				childResults.forEach(ids => ids.forEach(id => unionSet.add(id)));
+				childResults.forEach((ids) =>
+					ids.forEach((id) => unionSet.add(id))
+				);
 				return Array.from(unionSet);
 			} else {
 				// AND: Intersection of all child results
@@ -411,7 +549,7 @@ export class TransactionRepository {
 				let result = childResults[0];
 				for (let i = 1; i < childResults.length; i++) {
 					const set = new Set(childResults[i]);
-					result = result.filter(id => set.has(id));
+					result = result.filter((id) => set.has(id));
 				}
 				return result;
 			}
@@ -422,27 +560,29 @@ export class TransactionRepository {
 
 	// Evaluate a single filter node
 	private evaluateFilterNode(node: FilterNode): number[] {
-		if (node.field === 'category') {
-			return this.getCategoryTransactionIds(node.value || '');
-		} else if (node.field === 'tag') {
-			return this.getTagTransactionIds(node.value || '');
-		} else if (node.field === 'account') {
-			return this.getAccountTransactionIds(node.value || '');
-		} else if (node.field === 'counterparty') {
-			return this.getCounterpartyTransactionIds(node.value || '');
+		if (node.field === "category") {
+			return this.getCategoryTransactionIds(node.value || "");
+		} else if (node.field === "tag") {
+			return this.getTagTransactionIds(node.value || "");
+		} else if (node.field === "account") {
+			return this.getAccountTransactionIds(node.value || "");
+		} else if (node.field === "counterparty") {
+			return this.getCounterpartyTransactionIds(node.value || "");
 		}
 		return [];
 	}
 
 	// Get transaction IDs matching a category filter
 	private getCategoryTransactionIds(categoryValue: string): number[] {
-		if (categoryValue === '~empty~') {
+		if (categoryValue === "~empty~") {
 			const linesWithoutCategory = this.db
 				.select({ transaction_id: transactionLines.transaction_id })
 				.from(transactionLines)
 				.where(isNull(transactionLines.category_id))
 				.all();
-			return [...new Set(linesWithoutCategory.map(l => l.transaction_id))];
+			return [
+				...new Set(linesWithoutCategory.map((l) => l.transaction_id)),
+			];
 		}
 
 		const matchingCategories = this.db
@@ -453,7 +593,9 @@ export class TransactionRepository {
 
 		if (matchingCategories.length === 0) return [];
 
-		const categoryIds = matchingCategories.map(c => c.id).filter((id): id is number => id !== null && id !== undefined);
+		const categoryIds = matchingCategories.map((c) => c.id).filter((
+			id,
+		): id is number => id !== null && id !== undefined);
 		if (categoryIds.length === 0) return [];
 
 		const linesWithCategory = this.db
@@ -462,12 +604,12 @@ export class TransactionRepository {
 			.where(inArray(transactionLines.category_id, categoryIds))
 			.all();
 
-		return [...new Set(linesWithCategory.map(l => l.transaction_id))];
+		return [...new Set(linesWithCategory.map((l) => l.transaction_id))];
 	}
 
 	// Get transaction IDs matching a tag filter
 	private getTagTransactionIds(tagValue: string): number[] {
-		if (tagValue === '~empty~') {
+		if (tagValue === "~empty~") {
 			const allTransactions = this.db
 				.select({ id: transactions.id })
 				.from(transactions)
@@ -478,8 +620,12 @@ export class TransactionRepository {
 				.from(transactionTags)
 				.all();
 
-			const txIdsWithTags = new Set(txWithTags.map(t => t.transaction_id));
-			return allTransactions.map(t => t.id).filter(id => !txIdsWithTags.has(id));
+			const txIdsWithTags = new Set(
+				txWithTags.map((t) => t.transaction_id),
+			);
+			return allTransactions.map((t) => t.id).filter((id) =>
+				!txIdsWithTags.has(id)
+			);
 		}
 
 		const matchingTags = this.db
@@ -493,10 +639,12 @@ export class TransactionRepository {
 		const txWithTag = this.db
 			.select({ transaction_id: transactionTags.transaction_id })
 			.from(transactionTags)
-			.where(inArray(transactionTags.tag_id, matchingTags.map(t => t.id)))
+			.where(
+				inArray(transactionTags.tag_id, matchingTags.map((t) => t.id)),
+			)
 			.all();
 
-		return [...new Set(txWithTag.map(t => t.transaction_id))];
+		return [...new Set(txWithTag.map((t) => t.transaction_id))];
 	}
 
 	// Get transaction IDs matching an account filter
@@ -512,22 +660,27 @@ export class TransactionRepository {
 		const txWithAccount = this.db
 			.select({ id: transactions.id })
 			.from(transactions)
-			.where(inArray(transactions.account_id, matchingAccounts.map(a => a.id)))
+			.where(
+				inArray(
+					transactions.account_id,
+					matchingAccounts.map((a) => a.id),
+				),
+			)
 			.all();
 
-		return txWithAccount.map(t => t.id);
+		return txWithAccount.map((t) => t.id);
 	}
 
 	// Get transaction IDs matching a counterparty filter (case-insensitive partial match)
 	private getCounterpartyTransactionIds(counterpartyValue: string): number[] {
-		if (counterpartyValue === '~empty~') {
+		if (counterpartyValue === "~empty~") {
 			// Find transactions with null or empty counterparty
 			const txWithoutCounterparty = this.db
 				.select({ id: transactions.id })
 				.from(transactions)
 				.where(isNull(transactions.counterparty))
 				.all();
-			return txWithoutCounterparty.map(t => t.id);
+			return txWithoutCounterparty.map((t) => t.id);
 		}
 
 		// Case-insensitive partial match using LIKE
@@ -538,26 +691,33 @@ export class TransactionRepository {
 			.where(like(transactions.counterparty, `%${counterpartyValue}%`))
 			.all();
 
-		return txWithCounterparty.map(t => t.id);
+		return txWithCounterparty.map((t) => t.id);
 	}
 
 	// Check if a transaction line matches a filter node (for line-level filtering)
-	private lineMatchesFilter(line: TransactionLine, node: FilterNode): boolean {
-		if (node.type === 'filter') {
-			if (node.field === 'category') {
-				return this.lineMatchesCategoryFilter(line, node.value || '');
+	private lineMatchesFilter(
+		line: TransactionLine,
+		node: FilterNode,
+	): boolean {
+		if (node.type === "filter") {
+			if (node.field === "category") {
+				return this.lineMatchesCategoryFilter(line, node.value || "");
 			}
 			// Tags and accounts are transaction-level, not line-level
 			return true;
 		}
 
-		if (node.type === 'group' && node.children && node.children.length > 0) {
-			const childResults = node.children.map(child => this.lineMatchesFilter(line, child));
+		if (
+			node.type === "group" && node.children && node.children.length > 0
+		) {
+			const childResults = node.children.map((child) =>
+				this.lineMatchesFilter(line, child)
+			);
 
-			if (node.operator === 'or') {
-				return childResults.some(r => r);
+			if (node.operator === "or") {
+				return childResults.some((r) => r);
 			} else {
-				return childResults.every(r => r);
+				return childResults.every((r) => r);
 			}
 		}
 
@@ -565,8 +725,11 @@ export class TransactionRepository {
 	}
 
 	// Check if a line matches a category filter
-	private lineMatchesCategoryFilter(line: TransactionLine, categoryValue: string): boolean {
-		if (categoryValue === '~empty~') {
+	private lineMatchesCategoryFilter(
+		line: TransactionLine,
+		categoryValue: string,
+	): boolean {
+		if (categoryValue === "~empty~") {
 			return line.category_id === null;
 		}
 
@@ -576,8 +739,9 @@ export class TransactionRepository {
 			.where(like(categories.name, `%${categoryValue}%`))
 			.all();
 
-		const categoryIds = matchingCategories.map(c => c.id);
-		return line.category_id !== null && categoryIds.includes(line.category_id);
+		const categoryIds = matchingCategories.map((c) => c.id);
+		return line.category_id !== null &&
+			categoryIds.includes(line.category_id);
 	}
 
 	async findById(id: number): Promise<TransactionWithLines | null> {
@@ -601,7 +765,7 @@ export class TransactionRepository {
 			.select({
 				tag_id: transactionTags.tag_id,
 				tag_name: tags.name,
-				tag_color: tags.color
+				tag_color: tags.color,
 			})
 			.from(transactionTags)
 			.innerJoin(tags, eq(transactionTags.tag_id, tags.id))
@@ -611,24 +775,28 @@ export class TransactionRepository {
 		return {
 			...transaction,
 			lines,
-			tags: transactionTagsData.map(t => ({
+			tags: transactionTagsData.map((t) => ({
 				id: t.tag_id,
 				name: t.tag_name,
-				color: t.tag_color
-			}))
+				color: t.tag_color,
+			})),
 		};
 	}
 
-	async create(data: NewTransaction, lines: TransactionLineInput[]): Promise<TransactionWithLines> {
+	async create(
+		data: NewTransaction,
+		lines: TransactionLineInput[],
+	): Promise<TransactionWithLines> {
 		// Use transaction to ensure atomicity
 		return this.db.transaction((tx) => {
 			// Insert transaction
-			const [transaction] = tx.insert(transactions).values(data).returning().all();
+			const [transaction] = tx.insert(transactions).values(data)
+				.returning().all();
 
 			// Insert transaction lines
 			const linesWithTransactionId = lines.map((line) => ({
 				...line,
-				transaction_id: transaction.id
+				transaction_id: transaction.id,
 			}));
 
 			const createdLines = tx
@@ -639,7 +807,7 @@ export class TransactionRepository {
 
 			return {
 				...transaction,
-				lines: createdLines
+				lines: createdLines,
 			};
 		});
 	}
@@ -647,7 +815,7 @@ export class TransactionRepository {
 	async update(
 		id: number,
 		data: Partial<NewTransaction>,
-		lines?: TransactionLineInput[]
+		lines?: TransactionLineInput[],
 	): Promise<TransactionWithLines | null> {
 		return this.db.transaction((tx) => {
 			const [transaction] = tx
@@ -660,11 +828,13 @@ export class TransactionRepository {
 			if (!transaction) return null;
 
 			if (lines) {
-				tx.delete(transactionLines).where(eq(transactionLines.transaction_id, id)).run();
+				tx.delete(transactionLines).where(
+					eq(transactionLines.transaction_id, id),
+				).run();
 
 				const linesWithTransactionId = lines.map((line) => ({
 					...line,
-					transaction_id: id
+					transaction_id: id,
 				}));
 
 				const createdLines = tx
@@ -675,7 +845,7 @@ export class TransactionRepository {
 
 				return {
 					...transaction,
-					lines: createdLines
+					lines: createdLines,
 				};
 			}
 
@@ -687,13 +857,15 @@ export class TransactionRepository {
 
 			return {
 				...transaction,
-				lines: existingLines
+				lines: existingLines,
 			};
 		});
 	}
 
 	async delete(id: number): Promise<boolean> {
-		const result = this.db.delete(transactions).where(eq(transactions.id, id)).run();
+		const result = this.db.delete(transactions).where(
+			eq(transactions.id, id),
+		).run();
 		return result.changes > 0;
 	}
 
@@ -702,7 +874,7 @@ export class TransactionRepository {
 			.insert(transactionTags)
 			.values({
 				transaction_id: transactionId,
-				tag_id: tagId
+				tag_id: tagId,
 			})
 			.run();
 	}
