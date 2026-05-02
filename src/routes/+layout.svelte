@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../app.css';
+	import '@fortawesome/fontawesome-free/css/all.min.css';
 	import ConfirmationDialog from '$lib/components/ConfirmationDialog.svelte';
 	import { confirmationStore } from '$lib/stores/confirmationStore';
 	import { onMount } from 'svelte';
